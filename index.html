@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vending Operations — Governance Console</title>
+<style>
+  :root{
+    --navy:#0f2a35;
+    --navy-2:#163b4a;
+    --teal:#1f8a8a;
+    --teal-light:#5fc4bd;
+    --paper:#f4f6f5;
+    --card:#ffffff;
+    --ink:#13242b;
+    --ink-soft:#5a6e74;
+    --line:#dfe7e6;
+    --amber:#d98c2b;
+    --good:#2f8f5b;
+    --warn:#c0563a;
+    --mono: "IBM Plex Mono","SF Mono",Consolas,monospace;
+    --serif: "Source Serif Pro", Georgia, serif;
+    --sans: "Inter","Segoe UI",Helvetica,Arial,sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ===== Header / Masthead ===== */
+  .masthead{
+    background:linear-gradient(135deg,var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:28px clamp(20px,4vw,56px) 0;
+    position:relative;
+    overflow:hidden;
+  }
+  .masthead::after{
+    content:"";
+    position:absolute;
+    right:-10%;
+    top:-30%;
+    width:480px;height:480px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(95,196,189,.18), transparent 70%);
+    pointer-events:none;
+  }
+  .masthead-top{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:24px;
+    flex-wrap:wrap;
+    position:relative;
+    z-index:1;
+  }
+  .brand-tag{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--teal-light);
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-tag .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--teal-light);
+    box-shadow:0 0 0 4px rgba(95,196,189,.18);
+  }
+  h1.title{
+    font-family:var(--serif);
+    font-weight:600;
+    font-size:clamp(28px,4.2vw,46px);
+    line-height:1.1;
+    margin:0 0 8px;
+    letter-spacing:.01em;
+  }
+  .subtitle{
+    font-size:15px;
+    color:rgba(255,255,255,.72);
+    max-width:560px;
+    line-height:1.6;
+    margin:0;
+  }
+  .fleet-readout{
+    font-family:var(--mono);
+    font-size:12px;
+    color:rgba(255,255,255,.85);
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;
+    padding:14px 18px;
+    min-width:200px;
+    backdrop-filter:blur(2px);
+  }
+  .fleet-readout .row{
+    display:flex;justify-content:space-between;
+    padding:3px 0;
+    border-bottom:1px dashed rgba(255,255,255,.12);
+  }
+  .fleet-readout .row:last-child{border-bottom:none;}
+  .fleet-readout .label{color:rgba(255,255,255,.55);}
+  .fleet-readout .value{color:#fff;font-weight:600;}
+  .fleet-readout .value.good{color:var(--teal-light);}
+
+  /* ===== Tab Nav ===== */
+  .tab-rail{
+    margin-top:26px;
+    display:flex;
+    gap:2px;
+    overflow-x:auto;
+    position:relative;
+    z-index:1;
+    scrollbar-width:none;
+  }
+  .tab-rail::-webkit-scrollbar{display:none;}
+  .tab-btn{
+    font-family:var(--mono);
+    font-size:12.5px;
+    letter-spacing:.04em;
+    background:rgba(255,255,255,.04);
+    color:rgba(255,255,255,.6);
+    border:1px solid rgba(255,255,255,.08);
+    border-bottom:none;
+    padding:13px 20px;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:background .18s ease, color .18s ease;
+  }
+  .tab-btn .num{
+    color:var(--teal-light);
+    opacity:.7;
+    font-size:11px;
+  }
+  .tab-btn:hover{
+    background:rgba(255,255,255,.08);
+    color:#fff;
+  }
+  .tab-btn.active{
+    background:var(--paper);
+    color:var(--navy);
+    border-color:var(--paper);
+  }
+  .tab-btn.active .num{color:var(--teal); opacity:1;}
+
+  /* ===== Main content ===== */
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:36px clamp(20px,4vw,56px) 80px;
+  }
+  .panel{display:none;}
+  .panel.active{display:block; animation:rise .35s ease;}
+  @keyframes rise{
+    from{opacity:0; transform:translateY(8px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:24px;
+    flex-wrap:wrap;
+    margin-bottom:22px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .panel-head h2{
+    font-family:var(--serif);
+    font-size:clamp(22px,3vw,30px);
+    margin:0 0 6px;
+    color:var(--navy);
+  }
+  .panel-head p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:14.5px;
+    max-width:620px;
+    line-height:1.6;
+  }
+  .panel-meta{
+    font-family:var(--mono);
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:right;
+    line-height:1.7;
+  }
+  .panel-meta b{color:var(--navy);}
+
+  /* ===== Section labels ===== */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin:34px 0 12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .eyebrow:first-of-type{margin-top:0;}
+
+  /* ===== Cards ===== */
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:20px 22px;
+  }
+  .card + .card{margin-top:14px;}
+
+  /* ===== TAB 1: Roles & Responsibilities ===== */
+  .role-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+    gap:14px;
+  }
+  .role-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--teal);
+    border-radius:10px;
+    padding:18px 20px;
+    position:relative;
+    transition:box-shadow .2s ease, transform .2s ease;
+  }
+  .role-card:hover{
+    box-shadow:0 10px 28px -16px rgba(15,42,53,.35);
+    transform:translateY(-2px);
+  }
+  .role-card.solo{border-left-color:var(--amber);}
+  .role-card .role-name{
+    font-family:var(--serif);
+    font-size:18px;
+    font-weight:600;
+    color:var(--navy);
+    margin:0 0 4px;
+  }
+  .role-card .role-freq{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:12px;
+    display:inline-block;
+    background:rgba(31,138,138,.08);
+    padding:3px 9px;
+    border-radius:20px;
+  }
+  .role-card ul{
+    margin:0;
+    padding-left:0;
+    list-style:none;
+  }
+  .role-card li{
+    font-size:13.5px;
+    color:var(--ink);
+    line-height:1.55;
+    padding:5px 0 5px 18px;
+    position:relative;
+    border-bottom:1px solid #f0f3f2;
+  }
+  .role-card li:last-child{border-bottom:none;}
+  .role-card li::before{
+    content:"";
+    position:absolute;
+    left:0; top:13px;
+    width:6px;height:6px;
+    border-radius:1px;
+    background:var(--teal-light);
+    transform:rotate(45deg);
+  }
+
+  .solo-note{
+    margin-top:18px;
+    background:linear-gradient(90deg, rgba(217,140,43,.08), transparent);
+    border:1px solid #f0ddc4;
+    border-radius:10px;
+    padding:14px 18px;
+    font-size:13.5px;
+    color:#7a5320;
+    line-height:1.6;
+  }
+  .solo-note b{color:#5c3d14;}
+
+  /* ===== Assignment table (Tab 1) ===== */
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px;}
+  table.assign{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+    background:var(--card);
+    min-width:640px;
+  }
+  table.assign th{
+    text-align:left;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:rgba(255,255,255,.85);
+    background:var(--navy);
+    padding:12px 16px;
+    position:sticky; top:0;
+  }
+  table.assign td{
+    padding:13px 16px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+    line-height:1.55;
+  }
+  table.assign tr:last-child td{border-bottom:none;}
+  table.assign tr:nth-child(even) td{background:#fafcfc;}
+  .assignee{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-weight:600;
+    color:var(--navy);
+    white-space:nowrap;
+  }
+  .assignee .avatar{
+    width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);
+    font-size:10px;font-weight:700;
+    color:#fff;
+    flex-shrink:0;
+  }
+  .avatar.owner{background:var(--navy);}
+  .avatar.route{background:var(--teal);}
+  .avatar.maint{background:var(--amber);}
+  .avatar.fin{background:#6a5fc4;}
+  .tier-pill{
+    font-family:var(--mono);
+    font-size:10.5px;
+    padding:2px 8px;
+    border-radius:20px;
+    background:#eef3f2;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+
+  /* ===== TAB 2: Decision Framework ===== */
+  .tier-stack{display:flex; flex-direction:column; gap:16px;}
+  .tier-block{
+    display:grid;
+    grid-template-columns:140px 1fr;
+    gap:0;
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+    background:var(--card);
+  }
+  @media (max-width:680px){
+    .tier-block{grid-template-columns:1fr;}
+  }
+  .tier-side{
+    background:var(--navy);
+    color:#fff;
+    padding:20px 18px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .tier-block.t2 .tier-side{background:var(--navy-2);}
+  .tier-block.t3 .tier-side{background:var(--teal);}
+  .tier-side .tier-id{
+    font-family:var(--mono);
+    font-size:28px;
+    font-weight:700;
+    line-height:1;
+    opacity:.9;
+  }
+  .tier-side .tier-label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    opacity:.75;
+    margin-top:10px;
+  }
+  .tier-side .tier-who{
+    font-size:13px;
+    margin-top:14px;
+    line-height:1.5;
+    opacity:.95;
+    font-weight:600;
+  }
+  .tier-body{
+    padding:18px 22px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .tier-body .tier-title{
+    font-family:var(--serif);
+    font-size:17px;
+    color:var(--navy);
+    margin:0 0 6px;
+    font-weight:600;
+  }
+  .tier-items{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:8px;
+  }
+  .tier-item{
+    font-size:13.5px;
+    background:#f6f9f8;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 12px;
+    line-height:1.4;
+    color:var(--ink);
+  }
+  .tier-flow{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin:2px 0;
+    color:var(--ink-soft);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+  }
+  .tier-flow .arrow{font-size:16px; color:var(--teal);}
+
+  .decision-log-tip{
+    margin-top:18px;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    background:#f6f9f8;
+    border:1px dashed var(--line);
+    border-radius:10px;
+    padding:14px 18px;
+    line-height:1.6;
+  }
+  .decision-log-tip b{color:var(--navy);}
+
+  /* ===== TAB 3: Governance Cadence (Timeline) ===== */
+  .cadence-rail{
+    display:flex;
+    overflow-x:auto;
+    gap:0;
+    padding-bottom:6px;
+    scrollbar-width:thin;
+  }
+  .cadence-col{
+    flex:1;
+    min-width:200px;
+    border-right:1px solid var(--line);
+    padding:0 18px 4px;
+    position:relative;
+  }
+  .cadence-col:first-child{padding-left:0;}
+  .cadence-col:last-child{border-right:none; padding-right:0;}
+  .cadence-head{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:14px 0 16px;
+    border-bottom:3px solid var(--teal);
+    margin-bottom:14px;
+  }
+  .cadence-head .freq-name{
+    font-family:var(--serif);
+    font-size:18px;
+    font-weight:600;
+    color:var(--navy);
+  }
+  .cadence-head .freq-sub{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--teal);
+  }
+  .cadence-col:nth-child(1) .cadence-head{border-color:#5fc4bd;}
+  .cadence-col:nth-child(2) .cadence-head{border-color:#1f8a8a;}
+  .cadence-col:nth-child(3) .cadence-head{border-color:#d98c2b;}
+  .cadence-col:nth-child(4) .cadence-head{border-color:#c0563a;}
+  .cadence-col:nth-child(5) .cadence-head{border-color:#6a5fc4;}
+  .cadence-task{
+    font-size:13px;
+    line-height:1.6;
+    color:var(--ink);
+    padding:9px 0;
+    border-bottom:1px solid #f0f3f2;
+  }
+  .cadence-task:last-child{border-bottom:none;}
+  .cadence-task::before{
+    content:"›";
+    color:var(--teal);
+    margin-right:6px;
+    font-weight:700;
+  }
+
+  /* ===== TAB 4: Location Checklist ===== */
+  .checklist-shell{
+    display:grid;
+    grid-template-columns:1.3fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:780px){.checklist-shell{grid-template-columns:1fr;}}
+  .clip-card{
+    background:var(--navy);
+    color:#fff;
+    border-radius:14px;
+    padding:22px 24px;
+  }
+  .clip-card h3{
+    font-family:var(--serif);
+    font-size:17px;
+    margin:0 0 4px;
+    font-weight:600;
+  }
+  .clip-card .clip-sub{
+    font-size:12.5px;
+    color:rgba(255,255,255,.6);
+    margin-bottom:16px;
+  }
+  .check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:11px 0;
+    border-bottom:1px solid rgba(255,255,255,.1);
+    cursor:pointer;
+  }
+  .check-item:last-child{border-bottom:none;}
+  .check-box{
+    width:20px;height:20px;
+    border:1.5px solid rgba(255,255,255,.35);
+    border-radius:5px;
+    flex-shrink:0;
+    margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s ease;
+  }
+  .check-item.checked .check-box{
+    background:var(--teal-light);
+    border-color:var(--teal-light);
+  }
+  .check-box svg{opacity:0; transition:opacity .15s ease;}
+  .check-item.checked .check-box svg{opacity:1;}
+  .check-text{
+    font-size:13.5px;
+    line-height:1.5;
+  }
+  .check-text .check-q{
+    display:block;
+    font-weight:600;
+    color:#fff;
+  }
+  .check-item.checked .check-text .check-q{
+    color:rgba(255,255,255,.55);
+    text-decoration:line-through;
+  }
+  .check-text .check-d{
+    display:block;
+    color:rgba(255,255,255,.55);
+    margin-top:2px;
+  }
+  .clip-progress{
+    margin-top:16px;
+    height:6px;
+    border-radius:4px;
+    background:rgba(255,255,255,.12);
+    overflow:hidden;
+  }
+  .clip-progress-bar{
+    height:100%;
+    width:0%;
+    background:var(--teal-light);
+    transition:width .3s ease;
+  }
+  .clip-progress-label{
+    font-family:var(--mono);
+    font-size:11px;
+    color:rgba(255,255,255,.6);
+    margin-top:8px;
+    text-align:right;
+  }
+  .clip-reset{
+    margin-top:14px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.16);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .clip-reset:hover{background:rgba(255,255,255,.14);}
+
+  .agreement-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 24px;
+  }
+  .agreement-card h3{
+    font-family:var(--serif);
+    font-size:17px;
+    margin:0 0 4px;
+    color:var(--navy);
+    font-weight:600;
+  }
+  .agreement-card .clip-sub{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .agreement-list{margin:0; padding:0; list-style:none;}
+  .agreement-list li{
+    font-size:13.5px;
+    padding:8px 0 8px 26px;
+    position:relative;
+    line-height:1.55;
+    border-bottom:1px solid #f0f3f2;
+    color:var(--ink);
+  }
+  .agreement-list li:last-child{border-bottom:none;}
+  .agreement-list li::before{
+    content:counter(li-counter);
+    counter-increment:li-counter;
+    position:absolute; left:0; top:7px;
+    width:18px; height:18px;
+    border-radius:50%;
+    background:var(--teal);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:10px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .agreement-list{counter-reset:li-counter;}
+
+  .underperf-strip{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+    overflow-x:auto;
+  }
+  .up-step{
+    flex:1;
+    min-width:170px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-top:3px solid var(--warn);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .up-step .up-num{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--warn);
+    letter-spacing:.1em;
+  }
+  .up-step .up-title{
+    font-weight:600;
+    font-size:13.5px;
+    color:var(--navy);
+    margin:6px 0 4px;
+  }
+  .up-step .up-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+  }
+
+  /* ===== TAB 5: Operations Governance ===== */
+  .ops-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .ops-tab-btn{
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--ink-soft);
+    padding:9px 16px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .ops-tab-btn.active{
+    background:var(--navy);
+    color:#fff;
+    border-color:var(--navy);
+  }
+  .ops-panel{display:none;}
+  .ops-panel.active{display:block; animation:rise .3s ease;}
+
+  .visit-checklist{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:10px;
+  }
+  .visit-item{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13.5px;
+    line-height:1.5;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .visit-item .vi-num{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#fff;
+    background:var(--teal);
+    border-radius:50%;
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+    margin-top:1px;
+  }
+
+  .maint-split{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  @media(max-width:700px){.maint-split{grid-template-columns:1fr;}}
+  .maint-col{
+    border-radius:12px;
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .maint-col-head{
+    padding:14px 18px;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#fff;
+  }
+  .maint-col.routine .maint-col-head{background:var(--teal);}
+  .maint-col.scheduled .maint-col-head{background:var(--navy);}
+  .maint-col-body{
+    background:var(--card);
+    padding:16px 18px;
+  }
+  .maint-freq-group{margin-bottom:14px;}
+  .maint-freq-group:last-child{margin-bottom:0;}
+  .maint-freq-label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin-bottom:6px;
+  }
+  .maint-freq-group ul{margin:0; padding-left:18px;}
+  .maint-freq-group li{font-size:13px; line-height:1.6; color:var(--ink);}
+
+  .security-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+  }
+  .sec-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px;
+    font-size:13.5px;
+    line-height:1.55;
+    position:relative;
+    padding-left:48px;
+  }
+  .sec-card .sec-icon{
+    position:absolute; left:14px; top:14px;
+    width:26px;height:26px;
+    border-radius:7px;
+    background:rgba(31,138,138,.1);
+    color:var(--teal);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .sec-card .sec-icon svg{width:15px;height:15px;}
+
+  .restock-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+  }
+  .restock-card{
+    flex:1;
+    min-width:240px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+  }
+  .restock-card .rc-label{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:6px;
+  }
+  .restock-card p{font-size:13.5px; line-height:1.6; margin:0; color:var(--ink);}
+
+  /* ===== TAB 6: Future Technologies ===== */
+  .tech-roadmap{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    position:relative;
+    margin-top:8px;
+  }
+  .tech-roadmap::before{
+    content:"";
+    position:absolute;
+    left:27px; top:14px; bottom:14px;
+    width:2px;
+    background:repeating-linear-gradient(to bottom, var(--teal) 0 6px, transparent 6px 12px);
+  }
+  .tech-stop{
+    display:grid;
+    grid-template-columns:56px 1fr;
+    gap:18px;
+    padding:18px 0;
+  }
+  .tech-marker{
+    width:56px; height:56px;
+    border-radius:50%;
+    background:var(--card);
+    border:2px solid var(--teal);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--teal);
+    font-weight:700;
+    z-index:1;
+    text-align:center;
+    line-height:1.2;
+  }
+  .tech-content{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:18px 22px;
+  }
+  .tech-content h4{
+    font-family:var(--serif);
+    font-size:17px;
+    color:var(--navy);
+    margin:0 0 4px;
+    font-weight:600;
+  }
+  .tech-content .tech-tag{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+    display:block;
+  }
+  .tech-content p{font-size:13.5px; line-height:1.65; color:var(--ink); margin:0 0 10px;}
+  .tech-content p:last-child{margin-bottom:0;}
+  .tech-benefits{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  .tech-benefit{
+    font-size:12px;
+    background:#f0f7f6;
+    color:var(--teal);
+    border:1px solid #d8ece9;
+    padding:4px 10px;
+    border-radius:20px;
+  }
+
+  .habit-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:12px;
+    margin-top:8px;
+  }
+  .habit-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:16px 18px;
+    font-size:13.5px;
+    line-height:1.6;
+  }
+  .habit-card .habit-icon{margin-bottom:8px; display:block; color:var(--teal);}
+  .habit-card .habit-icon svg{width:20px;height:20px;}
+
+  footer{
+    text-align:center;
+    padding:28px 20px 40px;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    letter-spacing:.06em;
+  }
+
+  /* focus visibility */
+  button:focus-visible, .check-item:focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-top">
+    <div>
+      <div class="brand-tag"><span class="dot"></span>OPERATIONS CONSOLE — REV. 2026.06</div>
+      <h1 class="title">Vending Fleet Governance</h1>
+      <p class="subtitle">Operating reference for a 2-machine cash vending business — roles, decisions, routines, and the roadmap to the next stage of the operation.</p>
+    </div>
+    <div class="fleet-readout">
+      <div class="row"><span class="label">Active machines</span><span class="value">2</span></div>
+      <div class="row"><span class="label">Payment type</span><span class="value">Cash only</span></div>
+      <div class="row"><span class="label">Telemetry</span><span class="value">None</span></div>
+      <div class="row"><span class="label">Framework status</span><span class="value good">Active</span></div>
+    </div>
+  </div>
+
+  <nav class="tab-rail" id="tabRail">
+    <button class="tab-btn active" data-tab="roles"><span class="num">01</span> Roles &amp; Responsibilities</button>
+    <button class="tab-btn" data-tab="decisions"><span class="num">02</span> Decision Framework</button>
+    <button class="tab-btn" data-tab="cadence"><span class="num">03</span> Governance Cadence</button>
+    <button class="tab-btn" data-tab="location"><span class="num">04</span> Location Checklist</button>
+    <button class="tab-btn" data-tab="ops"><span class="num">05</span> Operations Governance</button>
+    <button class="tab-btn" data-tab="tech"><span class="num">06</span> Future Technologies</button>
+  </nav>
+</div>
+
+<main>
+
+  <!-- ============ TAB 1: ROLES ============ -->
+  <section class="panel active" id="panel-roles">
+    <div class="panel-head">
+      <div>
+        <h2>Roles &amp; Responsibilities</h2>
+        <p>Four functions keep the fleet running. At two machines, one person typically fills all of them — naming them separately turns the job into a checklist instead of a blur, and marks the natural points to delegate as the fleet grows.</p>
+      </div>
+      <div class="panel-meta">SECTION 02.1–02.2<br><b>4 roles</b> · 1 operator today</div>
+    </div>
+
+    <div class="eyebrow">Role profiles</div>
+    <div class="role-grid">
+      <div class="role-card solo">
+        <span class="role-freq">Ongoing</span>
+        <h3 class="role-name">Owner / Operator</h3>
+        <ul>
+          <li>Overall strategy &amp; growth direction</li>
+          <li>Location agreements &amp; relationships</li>
+          <li>Finances &amp; profitability reviews</li>
+          <li>Supplier relationships</li>
+          <li>Pricing &amp; expansion decisions</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-freq">2–3× weekly per machine</span>
+        <h3 class="role-name">Route Operator (Filler)</h3>
+        <ul>
+          <li>Restocking to par levels</li>
+          <li>Cash collection</li>
+          <li>Cleaning &amp; tidying</li>
+          <li>Basic troubleshooting</li>
+          <li>Customer feedback collection</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-freq">As needed / scheduled</span>
+        <h3 class="role-name">Maintenance Technician</h3>
+        <ul>
+          <li>Repairs beyond routine servicing</li>
+          <li>Preventive maintenance</li>
+          <li>Parts replacement</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <span class="role-freq">Weekly</span>
+        <h3 class="role-name">Bookkeeper / Finance Function</h3>
+        <ul>
+          <li>Recording sales &amp; cash</li>
+          <li>Reconciling collections</li>
+          <li>Tracking costs &amp; margins</li>
+          <li>Commission payments</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="solo-note">
+      <b>Today, all four roles map to one person.</b> The value of separating them is the checklist they create — nothing gets skipped because "the owner is busy with strategy." As the fleet grows past 5–10 machines, each role becomes a natural hire or outsourcing point.
+    </div>
+
+    <div class="eyebrow">Assignment matrix — who does what, today</div>
+    <div class="table-wrap">
+      <table class="assign">
+        <thead>
+          <tr><th>Role</th><th style="width:54%">Responsibilities</th><th>Frequency</th><th>Assigned to</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>Owner / Operator</b></td>
+            <td>Strategy &amp; growth direction, location agreements, finances, supplier relationships, pricing &amp; expansion decisions</td>
+            <td><span class="tier-pill">Ongoing</span></td>
+            <td><span class="assignee"><span class="avatar owner">JA</span> You (Owner)</span></td>
+          </tr>
+          <tr>
+            <td><b>Route Operator</b></td>
+            <td>Restocking, cash collection, cleaning, basic troubleshooting, feedback collection</td>
+            <td><span class="tier-pill">2–3× weekly / machine</span></td>
+            <td><span class="assignee"><span class="avatar route">JA</span> You (Owner)</span></td>
+          </tr>
+          <tr>
+            <td><b>Maintenance Technician</b></td>
+            <td>Repairs beyond routine servicing, preventive maintenance, part replacement</td>
+            <td><span class="tier-pill">As needed</span></td>
+            <td><span class="assignee"><span class="avatar maint">JA</span> You (Owner)</span></td>
+          </tr>
+          <tr>
+            <td><b>Bookkeeper / Finance</b></td>
+            <td>Record sales &amp; cash, reconcile collections, track costs &amp; margins, commission payments</td>
+            <td><span class="tier-pill">Weekly</span></td>
+            <td><span class="assignee"><span class="avatar fin">JA</span> You (Owner)</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ TAB 2: DECISION FRAMEWORK ============ -->
+  <section class="panel" id="panel-decisions">
+    <div class="panel-head">
+      <div>
+        <h2>Decision Framework</h2>
+        <p>Three tiers of decisions, sorted by who makes the call and how often it's revisited. Naming the tier before acting prevents ad-hoc, inconsistent choices that are hard to unwind later.</p>
+      </div>
+      <div class="panel-meta">SECTION 02.2<br><b>3 tiers</b> · on-the-spot → quarterly</div>
+    </div>
+
+    <div class="tier-stack">
+
+      <div class="tier-block t1">
+        <div class="tier-side">
+          <div>
+            <div class="tier-id">T1</div>
+            <div class="tier-label">Routine</div>
+          </div>
+          <div class="tier-who">Made on the spot — by whoever is servicing the machine</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-title">Operational decisions, decided in the field</div>
+          <div class="tier-items">
+            <div class="tier-item">Restocking quantities based on what's sold</div>
+            <div class="tier-item">Minor cleaning &amp; cosmetic fixes</div>
+            <div class="tier-item">Small refunds for failed vends</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tier-flow"><span>escalates if it recurs</span> <span class="arrow">↓</span></div>
+
+      <div class="tier-block t2">
+        <div class="tier-side">
+          <div>
+            <div class="tier-id">T2</div>
+            <div class="tier-label">Tactical</div>
+          </div>
+          <div class="tier-who">Made by the owner — reviewed weekly / monthly</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-title">Adjustments to how the business runs</div>
+          <div class="tier-items">
+            <div class="tier-item">Product mix changes — adding, dropping, swapping items</div>
+            <div class="tier-item">Price adjustments</div>
+            <div class="tier-item">Restocking schedule changes</div>
+            <div class="tier-item">Supplier switches for better pricing</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tier-flow"><span>plotted into the quarterly review</span> <span class="arrow">↓</span></div>
+
+      <div class="tier-block t3">
+        <div class="tier-side">
+          <div>
+            <div class="tier-id">T3</div>
+            <div class="tier-label">Strategic</div>
+          </div>
+          <div class="tier-who">Planned by the owner — reviewed quarterly</div>
+        </div>
+        <div class="tier-body">
+          <div class="tier-title">Decisions that reshape the business</div>
+          <div class="tier-items">
+            <div class="tier-item">Adding, relocating, or removing machines</div>
+            <div class="tier-item">Entering new location agreements</div>
+            <div class="tier-item">Technology upgrades — cashless payment, telemetry, remote monitoring</div>
+            <div class="tier-item">Hiring help or outsourcing maintenance</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="decision-log-tip">
+      <b>Keep a decision log.</b> A simple running note of every Tier 2 and Tier 3 decision creates a history that's useful for spotting patterns — e.g. realising every price increase you've made has been too small or too late.
+    </div>
+  </section>
+
+  <!-- ============ TAB 3: GOVERNANCE CADENCE ============ -->
+  <section class="panel" id="panel-cadence">
+    <div class="panel-head">
+      <div>
+        <h2>Governance Cadence</h2>
+        <p>What gets reviewed, and when. Each rhythm builds on the one before it — visit-level data rolls up into weekly reconciliation, monthly profitability, quarterly strategy, and an annual reset.</p>
+      </div>
+      <div class="panel-meta">SECTION 02.3<br><b>5 cadences</b> · per-visit → annual</div>
+    </div>
+
+    <div class="cadence-rail">
+      <div class="cadence-col">
+        <div class="cadence-head">
+          <span class="freq-name">Per Visit</span>
+          <span class="freq-sub">Every service stop</span>
+        </div>
+        <div class="cadence-task">Restock to par levels</div>
+        <div class="cadence-task">Clean &amp; inspect machine</div>
+        <div class="cadence-task">Collect &amp; log cash</div>
+        <div class="cadence-task">Log restock + sales data</div>
+        <div class="cadence-task">Talk to location contact</div>
+      </div>
+      <div class="cadence-col">
+        <div class="cadence-head">
+          <span class="freq-name">Weekly</span>
+          <span class="freq-sub">Reconciliation cycle</span>
+        </div>
+        <div class="cadence-task">Reconcile cash vs. expected sales</div>
+        <div class="cadence-task">Update inventory records</div>
+        <div class="cadence-task">Review which items are moving</div>
+      </div>
+      <div class="cadence-col">
+        <div class="cadence-head">
+          <span class="freq-name">Monthly</span>
+          <span class="freq-sub">Profitability review</span>
+        </div>
+        <div class="cadence-task">Review profitability per machine</div>
+        <div class="cadence-task">Review supplier costs</div>
+        <div class="cadence-task">Check location relationship health</div>
+        <div class="cadence-task">Review maintenance log for recurring issues</div>
+      </div>
+      <div class="cadence-col">
+        <div class="cadence-head">
+          <span class="freq-name">Quarterly</span>
+          <span class="freq-sub">Strategic review</span>
+        </div>
+        <div class="cadence-task">Location performance review</div>
+        <div class="cadence-task">Expansion candidate review</div>
+        <div class="cadence-task">Pricing review</div>
+        <div class="cadence-task">Technology investment review</div>
+        <div class="cadence-task">Insurance &amp; risk review</div>
+      </div>
+      <div class="cadence-col">
+        <div class="cadence-head">
+          <span class="freq-name">Annually</span>
+          <span class="freq-sub">Full business review</span>
+        </div>
+        <div class="cadence-task">Profitability trends</div>
+        <div class="cadence-task">Machine condition / replacement planning</div>
+        <div class="cadence-task">Growth plan for next year</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 4: LOCATION CHECKLIST ============ -->
+  <section class="panel" id="panel-location">
+    <div class="panel-head">
+      <div>
+        <h2>Location Checklist</h2>
+        <p>With only two machines, each site is roughly half the business. Use the site evaluation checklist before placing or relocating a machine, and the agreement checklist when formalising any placement.</p>
+      </div>
+      <div class="panel-meta">SECTION 03.1–03.4<br><b>7</b> evaluation criteria · <b>7</b> agreement items</div>
+    </div>
+
+    <div class="checklist-shell">
+      <div class="clip-card">
+        <h3>Site evaluation criteria</h3>
+        <div class="clip-sub">Walk through before placing or relocating a machine — check items off as you confirm them</div>
+        <div id="siteChecklist">
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Foot traffic</span><span class="check-d">Realistic daily count of people who'd pass the machine</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Existing options</span><span class="check-d">Competing vending, cafeteria, or nearby store?</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Audience fit</span><span class="check-d">Do the people here match a viable product mix?</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Space &amp; power</span><span class="check-d">Confirmed dimensions, doorway/elevator access, standard outlet within reach</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Security</span><span class="check-d">Is the area supervised, locked after hours, or exposed to the street?</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Access hours</span><span class="check-d">Can you service it when you need to, and can customers use it when they need to?</span></div>
+          </div>
+          <div class="check-item" tabindex="0" role="checkbox" aria-checked="false">
+            <div class="check-box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0f2a35" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></div>
+            <div class="check-text"><span class="check-q">Decision-maker identified</span><span class="check-d">Know who controls vending placement at this site</span></div>
+          </div>
+        </div>
+        <div class="clip-progress"><div class="clip-progress-bar" id="siteProgressBar"></div></div>
+        <div class="clip-progress-label" id="siteProgressLabel">0 / 7 confirmed</div>
+        <button class="clip-reset" data-reset="siteChecklist">Reset checklist</button>
+      </div>
+
+      <div>
+        <div class="agreement-card">
+          <h3>Placement agreement — what to cover</h3>
+          <div class="clip-sub">Even informal arrangements benefit from being written down, one to two pages, kept collaborative</div>
+          <ul class="agreement-list">
+            <li>Parties and the exact location / address</li>
+            <li>Term &amp; termination notice (e.g. ongoing, 30 days either way)</li>
+            <li>What you'll provide — machine type, servicing frequency, product range</li>
+            <li>Commission arrangement, if any — how &amp; when calculated and paid</li>
+            <li>Responsibility for upkeep, cleanliness, and damage</li>
+            <li>How you'll access the machine for servicing — hours, keys, escort</li>
+            <li>A contact point on both sides for day-to-day issues</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="eyebrow">Underperformance protocol</div>
+    <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 4px;line-height:1.6;">Define this in advance so it isn't an emotional call later.</p>
+    <div class="underperf-strip">
+      <div class="up-step">
+        <div class="up-num">STEP 1</div>
+        <div class="up-title">Set a threshold</div>
+        <div class="up-desc">Weekly gross sales below a set figure for two consecutive months triggers a review.</div>
+      </div>
+      <div class="up-step">
+        <div class="up-num">STEP 2</div>
+        <div class="up-title">Investigate cause</div>
+        <div class="up-desc">Wrong product mix, poor visibility, declining foot traffic, or missing features (no cashless, frequent stockouts).</div>
+      </div>
+      <div class="up-step">
+        <div class="up-num">STEP 3</div>
+        <div class="up-title">Remediate (1–2 months)</div>
+        <div class="up-desc">Adjust product mix, improve visibility, fix equipment issues.</div>
+      </div>
+      <div class="up-step">
+        <div class="up-num">STEP 4</div>
+        <div class="up-title">Relocate if unchanged</div>
+        <div class="up-desc">Find a new site first, then remove — honouring the placement agreement's notice period.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 5: OPERATIONS GOVERNANCE ============ -->
+  <section class="panel" id="panel-ops">
+    <div class="panel-head">
+      <div>
+        <h2>Operations Governance</h2>
+        <p>The mechanics of keeping the machines running: what happens at every visit, what's scheduled on a calendar, how restocking decisions get made, and how the machines are kept secure.</p>
+      </div>
+      <div class="panel-meta">SECTION 04.1–04.4<br><b>4</b> operational areas</div>
+    </div>
+
+    <div class="ops-tabs" id="opsTabs">
+      <button class="ops-tab-btn active" data-ops="visit">Per-Visit Checklist</button>
+      <button class="ops-tab-btn" data-ops="restock">Restocking</button>
+      <button class="ops-tab-btn" data-ops="maint">Maintenance</button>
+      <button class="ops-tab-btn" data-ops="security">Security</button>
+    </div>
+
+    <div class="ops-panel active" id="ops-visit">
+      <div class="visit-checklist">
+        <div class="visit-item"><span class="vi-num">1</span>Open &amp; inspect interior — spills, debris, pest signs, odours</div>
+        <div class="visit-item"><span class="vi-num">2</span>Check for expired or near-expiry products; rotate first-in, first-out</div>
+        <div class="visit-item"><span class="vi-num">3</span>Restock to par levels based on what's sold since last visit</div>
+        <div class="visit-item"><span class="vi-num">4</span>Inspect for jammed trays, misaligned coils, or stuck items</div>
+        <div class="visit-item"><span class="vi-num">5</span>Clean exterior glass, buttons, and the surrounding area; empty nearby bins</div>
+        <div class="visit-item"><span class="vi-num">6</span>Test coin/cash mechanism — acceptance and correct change</div>
+        <div class="visit-item"><span class="vi-num">7</span>Collect cash, count and log on the spot, secure in a lockbox/sealed bag</div>
+        <div class="visit-item"><span class="vi-num">8</span>Verify the machine locks properly before leaving</div>
+        <div class="visit-item"><span class="vi-num">9</span>Speak briefly with the site contact for feedback or issues</div>
+        <div class="visit-item"><span class="vi-num">10</span>Log the visit — restocked items, cash collected, issues found/fixed</div>
+      </div>
+    </div>
+
+    <div class="ops-panel" id="ops-restock">
+      <div class="restock-row">
+        <div class="restock-card">
+          <div class="rc-label">Par levels</div>
+          <p>A target quantity per product slot to refill to at each visit — the baseline that turns restocking into a quick top-up rather than a guess.</p>
+        </div>
+        <div class="restock-card">
+          <div class="rc-label">Per-visit log</div>
+          <p>Paper, spreadsheet, or notes app — record what sold (what's missing) and what was restocked, every visit.</p>
+        </div>
+        <div class="restock-card">
+          <div class="rc-label">Visit frequency</div>
+          <p>Start at 2–3 visits/week per machine until sell-through is understood, then adjust: more for high-traffic, less for slow movers.</p>
+        </div>
+        <div class="restock-card">
+          <div class="rc-label">Stock rotation</div>
+          <p>First-in, first-out enforced at every restock, with expiry dates checked without exception.</p>
+        </div>
+      </div>
+      <div class="decision-log-tip" style="margin-top:18px;">
+        As volume grows, this manual log becomes the foundation for a lightweight vending management system or telemetry add-on — the habit you build now is what that software eventually automates.
+      </div>
+    </div>
+
+    <div class="ops-panel" id="ops-maint">
+      <div class="maint-split">
+        <div class="maint-col routine">
+          <div class="maint-col-head">Routine upkeep — every visit</div>
+          <div class="maint-col-body">
+            <ul>
+              <li>Exterior &amp; interior cleaning, including buttons, glass, and surrounding area</li>
+              <li>Clearing the coin/cash mechanism of dust, debris, or jams</li>
+              <li>Visual check for loose panels, damaged decals, or signs of tampering</li>
+            </ul>
+          </div>
+        </div>
+        <div class="maint-col scheduled">
+          <div class="maint-col-head">Scheduled preventive maintenance</div>
+          <div class="maint-col-body">
+            <div class="maint-freq-group">
+              <div class="maint-freq-label">Monthly</div>
+              <ul>
+                <li>Deeper clean of coin mechanism &amp; bill path</li>
+                <li>Check &amp; tighten loose fittings</li>
+                <li>Check lighting, replace bulbs</li>
+              </ul>
+            </div>
+            <div class="maint-freq-group">
+              <div class="maint-freq-label">Quarterly</div>
+              <ul>
+                <li>Inspect product delivery mechanisms (coils, trays) for wear and calibration</li>
+                <li>Check the machine is level and securely positioned</li>
+                <li>Review surroundings for pest activity</li>
+              </ul>
+            </div>
+            <div class="maint-freq-group">
+              <div class="maint-freq-label">As needed</div>
+              <ul>
+                <li>Replace worn parts with manufacturer-recommended or compatible parts</li>
+                <li>Address persistent jams, mis-vends, or mechanical noise immediately</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="decision-log-tip" style="margin-top:18px;">
+        <b>Maintenance log:</b> record every repair, part replaced, and recurring issue per machine. Patterns here — like the same coil jamming repeatedly — tell you when a part, or the whole machine, needs replacing, and support warranty or insurance claims.
+      </div>
+    </div>
+
+    <div class="ops-panel" id="ops-security">
+      <div class="security-grid">
+        <div class="sec-card"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><path d="M12 7v13M5 12H2a10 10 0 0 0 20 0h-3M5 12a7 7 0 0 0 14 0"/></svg></span>Ensure each machine is stable, level, and anchored if the manufacturer recommends it.</div>
+        <div class="sec-card"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>Position machines in visible, supervised areas where possible — visibility is the cheapest theft deterrent.</div>
+        <div class="sec-card"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>Use high-security locks; upgrade factory locks if a location has any history of tampering.</div>
+        <div class="sec-card"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Avoid leaving large cash amounts in the machine for extended periods — collect on a schedule matched to typical takings.</div>
+        <div class="sec-card"><span class="sec-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.5-3.5 8-9 9-5.5-1-9-4.5-9-9V5l9-3 9 3v7Z"/></svg></span>Keep a record of serial numbers, lock/key details, and machine condition (photos) for insurance purposes.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TAB 6: FUTURE TECHNOLOGIES ============ -->
+  <section class="panel" id="panel-tech">
+    <div class="panel-head">
+      <div>
+        <h2>Future Technologies</h2>
+        <p>Two simple, cash-only machines need no platform today — but the manual habits below are exactly what make a future upgrade painless, whichever vendor is chosen.</p>
+      </div>
+      <div class="panel-meta">SECTION 08.1–08.2<br><b>Vendor-agnostic</b> · evaluated as Tier 3</div>
+    </div>
+
+    <div class="eyebrow">Manual habits worth building now</div>
+    <div class="habit-grid">
+      <div class="habit-card"><span class="habit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>A simple log per machine: date, items restocked, cash collected, issues noted.</div>
+      <div class="habit-card"><span class="habit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-4.35-4.35"/><circle cx="10" cy="10" r="7"/><path d="M10 7v6M7 10h6"/></svg></span>A par-level list per machine, reviewed and adjusted as sell-through becomes clear.</div>
+      <div class="habit-card"><span class="habit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76Z"/></svg></span>A maintenance log per machine, recording every repair and recurring issue.</div>
+      <div class="habit-card"><span class="habit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-4"/></svg></span>A monthly profitability summary per machine, built from the logs above.</div>
+    </div>
+
+    <div class="eyebrow">Upgrade roadmap — evaluate as Tier 3 (strategic) decisions</div>
+    <div class="tech-roadmap">
+      <div class="tech-stop">
+        <div class="tech-marker">CASH-<br>LESS</div>
+        <div class="tech-content">
+          <span class="tech-tag">Stage 1 · Payment</span>
+          <h4>Cashless payment acceptance</h4>
+          <p>Card and mobile wallet acceptance, layered onto existing machines via a reader. Typically increases both transaction frequency and average spend — people buy more when they're not limited by coins in their pocket.</p>
+          <div class="tech-benefits">
+            <span class="tech-benefit">↑ Transaction frequency</span>
+            <span class="tech-benefit">↑ Average spend</span>
+            <span class="tech-benefit">Flexible pricing (not $0.25 steps)</span>
+          </div>
+        </div>
+      </div>
+      <div class="tech-stop">
+        <div class="tech-marker">TELE-<br>METRY</div>
+        <div class="tech-content">
+          <span class="tech-tag">Stage 2 · Visibility</span>
+          <h4>Remote monitoring</h4>
+          <p>Machines report stock levels and status electronically. Reduces unnecessary visits — you only drive out when there's something to do — and surfaces faults (jams, payment errors, temperature issues) before a customer does.</p>
+          <div class="tech-benefits">
+            <span class="tech-benefit">Fewer wasted visits</span>
+            <span class="tech-benefit">Faster fault response</span>
+            <span class="tech-benefit">Real sell-through data</span>
+          </div>
+        </div>
+      </div>
+      <div class="tech-stop">
+        <div class="tech-marker">VMS</div>
+        <div class="tech-content">
+          <span class="tech-tag">Stage 3 · Automation</span>
+          <h4>Vending management software</h4>
+          <p>Automates the logging, par-level tracking, and reconciliation processes built manually in earlier stages — picking up exactly where the spreadsheet habit leaves off, with route planning and prekitting layered on top.</p>
+          <div class="tech-benefits">
+            <span class="tech-benefit">Automated reconciliation</span>
+            <span class="tech-benefit">Route &amp; prekit planning</span>
+            <span class="tech-benefit">Scales past a handful of machines</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="decision-log-tip" style="margin-top:8px;">
+      Each stage should be evaluated once the manual process it replaces is well-established, and the cost/benefit can be assessed against <b>actual sales data from your own machines</b> — not industry averages.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  VENDING FLEET GOVERNANCE — VENDOR-AGNOSTIC OPERATING REFERENCE — INTERNAL USE
+</footer>
+
+<script>
+  // ===== Main tab switching =====
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels = document.querySelectorAll('.panel');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ===== Ops sub-tabs (Tab 5) =====
+  const opsBtns = document.querySelectorAll('.ops-tab-btn');
+  const opsPanels = document.querySelectorAll('.ops-panel');
+  opsBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      opsBtns.forEach(b => b.classList.remove('active'));
+      opsPanels.forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('ops-' + btn.dataset.ops).classList.add('active');
+    });
+  });
+
+  // ===== Interactive site checklist (Tab 4) =====
+  function setupChecklist(containerId, barId, labelId, noun){
+    const container = document.getElementById(containerId);
+    const items = container.querySelectorAll('.check-item');
+    const bar = document.getElementById(barId);
+    const label = document.getElementById(labelId);
+
+    function update(){
+      const total = items.length;
+      const checked = container.querySelectorAll('.check-item.checked').length;
+      bar.style.width = (checked/total*100) + '%';
+      label.textContent = checked + ' / ' + total + ' ' + noun;
+    }
+
+    items.forEach(item => {
+      function toggle(){
+        item.classList.toggle('checked');
+        item.setAttribute('aria-checked', item.classList.contains('checked'));
+        update();
+      }
+      item.addEventListener('click', toggle);
+      item.addEventListener('keydown', e => {
+        if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggle(); }
+      });
+    });
+    update();
+  }
+  setupChecklist('siteChecklist','siteProgressBar','siteProgressLabel','confirmed');
+
+  document.querySelectorAll('.clip-reset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const container = document.getElementById(btn.dataset.reset);
+      container.querySelectorAll('.check-item.checked').forEach(i => {
+        i.classList.remove('checked');
+        i.setAttribute('aria-checked','false');
+      });
+      container.dispatchEvent(new Event('change'));
+      // recompute
+      const bar = document.getElementById('siteProgressBar');
+      const label = document.getElementById('siteProgressLabel');
+      bar.style.width = '0%';
+      label.textContent = '0 / ' + container.querySelectorAll('.check-item').length + ' confirmed';
+    });
+  });
+</script>
+
+</body>
+</html>
